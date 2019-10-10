@@ -23,10 +23,7 @@
 
 #include "rknn_msg.h"
 #include "ui_res.h"
-
-#include <uvc/uvc_control.h>
-#include <uvc/uvc_video.h>
-#include <uvc/mpi_enc.h>
+#include "device_name.h"
 
 #if ENABLE_SSD
 #include "ssd.h"
@@ -43,7 +40,7 @@
 #include "frg_ui.h"
 #endif
 
-#define TEXT_SIZE_MAIN    18
+#define TEXT_SIZE_MAIN    26
 #define _ID_TIMER      106
 
 static HWND g_main_hwnd;
@@ -58,6 +55,11 @@ static int g_run_flag = 1;
 static pthread_t g_run_tid = 0;
 static pthread_t g_post_tid = 0;
 char *dev_name;
+
+int enroll = 0;
+int spoof_check = 0;
+char first_name[128] = "";
+char last_name[128] = "";
 
 int rknn_reg_paint_callback(paint_callback_t func)
 {
@@ -183,16 +185,10 @@ int rknn_demo_init()
 #endif
     rknn_post_pth_create(post);
     rknn_run_pth_create(run);
-    if (!check_uvc_video_id()) {
-        mpi_enc_set_format(MPP_FMT_YUV420P);
-        add_uvc_video();
-        register_callback_for_uvc(uvc_read_camera_buffer);
-    }
 }
 
 int rknn_demo_deinit()
 {
-    uvc_video_id_exit_all();
 #if ENABLE_SSD
     ssd_deinit();
 #endif
@@ -263,7 +259,7 @@ int rknn_ui_show()
                                 FONT_WEIGHT_REGULAR, FONT_SLANT_ROMAN,
                                 FONT_FLIP_NIL, FONT_OTHER_NIL,
                                 FONT_UNDERLINE_NONE, FONT_STRUCKOUT_NONE,
-                                TEXT_SIZE_MAIN, 0);
+                                TEXT_SIZE_MAIN , 0);
     SetWindowFont(g_main_hwnd, g_main_font);
 
     g_bkcolor = GetWindowElementPixel(g_main_hwnd, WE_BGC_DESKTOP);
@@ -294,60 +290,93 @@ void parse_args(int argc, char **argv)
    int c;
    int digit_optind = 0;
 
+   int option_index = 0;
+
    while (1) {
        int this_option_optind = optind ? optind : 1;
-       int option_index = 0;
+
        static struct option long_options[] = {
-           {"device",    required_argument, 0, 'd' },
-           {"nonenpu",  no_argument,       0, 'n' },
+           {"device",   required_argument, 0, 'd' },
            {"help",     no_argument,       0, 'p' },
+           {"enroll",   required_argument, 0, 'e' },
+           {"spoof",    no_argument,       0, 's' },
            {0,          0,                 0,  0  }
        };
 
-       c = getopt_long(argc, argv, "d:n:p",
+       c = getopt_long(argc, argv, "d:p:e:s",
            long_options, &option_index);
        if (c == -1)
            break;
-
+       printf("choice : %c %i %i\n",c, this_option_optind, option_index);
        switch (c) {
        case 'd':
 	   strcpy(cam_device, optarg);
            break;
-       case 'n':
-	   g_run_flag = 0;
-	   break;
+       case 'e':
+           if (argc < 3) {
+               printf("Usage: %s --enroll \"[first_name] [last_name]\"\n",argv[0]);
+               exit(-1);
+           }
+           printf("In Enroll Mode\n");
+           enroll = 1;
+           char *token = strtok(argv[option_index], " ");
+           printf("%s\n", token);
+           if (token == NULL ) {
+               printf("Usage: %s --enroll \"[first_name] [last_name]\"\n",argv[0]);
+               exit(-1);
+           }
+           strcpy(first_name, token);
+           token = strtok(NULL, " ");
+           if (token == NULL ) {
+               printf("Usage: %s --enroll \"[first_name] [last_name]\"\n",argv[0]);
+               exit(-1);
+           }
+           strcpy(last_name, token);
+           printf("Enrolling %s %s\n", first_name, last_name);
+           break;
+       case 's':
+           spoof_check = 1;
+           printf("Spoof check : ON\n");
+           break;
        case '?':
        case 'p':
            printf("Usage: %s to run rknn demo\n"
-                  "         --device, required, use usb camera or mipi camera\n",
+                  "         --device, required, use usb camera or mipi camera\n"
+                  "         --spoof, no argument, For checking spoof\n"
+                  "         --enroll [first_name] [last_name], required argument first name and last name for enrolling person\n",
                   argv[0]);
            exit(-1);
-
        default:
            printf("?? getopt returned character code 0%o ??\n", c);
        }
    }
 }
 
+
+
+
 int MiniGUIMain(int argc, const char* argv[])
 {
     struct stat st;
 
+
     parse_args(argc, argv);
     if (strcmp(cam_device, "usb") == 0)
-	dev_name = get_device("uvc");
+        dev_name = get_device("uvc");
 
     if (strcmp(cam_device, "mipi") == 0)
         dev_name = get_device("rkisp");
 
     if (!dev_name) {
-	printf("do not get usb camera or mipi camera vide node, use image to run rknn_demo\n");
-	dev_name = "/usr/local/share/rknn_demo/resource/test_image.nv12";
-	if (-1 == stat(dev_name, &st)) {
-		fprintf(stderr, "Cannot identify '%s': %d, %s\n", dev_name, errno, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
+        printf("do not get usb camera or mipi camera vide node, use image to run rknn_demo\n");
+        dev_name = "/usr/local/share/rknn_demo/resource/test_image.nv12";
+        if (-1 == stat(dev_name, &st)) {
+            fprintf(stderr, "Cannot identify '%s': %d, %s\n", dev_name, errno, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
     }
+
+    system("date -s \"20190711\"");
 
     rknn_demo_init();
     rknn_ui_show();

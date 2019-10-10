@@ -22,7 +22,8 @@ typedef struct _SSDRECT
 } SSDRECT;
 
 struct ssd_object {
-  char name[10];
+  char name[256];
+  int spoof_status;
   SSDRECT select;
 };
 
@@ -37,5 +38,12 @@ int ssd_init(char *name);
 int ssd_deinit();
 float ssd_get_fps();
 struct ssd_group* ssd_get_ssd_group();
+
+// enroll = 0 for recognise mode
+// enroll = 1 for enroll mode
+extern int enroll;
+extern int spoof_check;
+extern char first_name[128];
+extern char last_name[128];
 
 #endif

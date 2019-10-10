@@ -12,8 +12,8 @@
 #include "ui_res.h"
 #include "ssd.h"
 
-#define DST_W             300
-#define DST_H             300
+#define DST_W             640
+#define DST_H             480
 #if NEED_RKNNAPI
 #define DISP_W            2048
 #define DISP_H            1536
@@ -27,7 +27,7 @@
 #endif
 
 #define CAPTION_H         70
-#define RECT_EDGE_SIZE    20
+#define RECT_EDGE_SIZE    10
 #define TEXT_SIZE_FPS     36
 #define TEXT_SIZE_FPSNUM  20
 #define TEXT_SIZE_CAPTION 30
@@ -58,9 +58,15 @@ RECT main_rect2 = {0, 160, 290, 720};
 	            func(handle, ((RECT *)rect)->left, ((RECT *)rect)->top, \
 						                         ((RECT *)rect)->right, ((RECT *)rect)->bottom); \
             func(handle, ((RECT *)rect)->left - 1, ((RECT *)rect)->top - 1, \
-					                         ((RECT *)rect)->right + 1, ((RECT *)rect)->bottom + 1); \
+                                             ((RECT *)rect)->right + 1, ((RECT *)rect)->bottom + 1); \
+            func(handle, ((RECT *)rect)->left - 2, ((RECT *)rect)->top - 2, \
+                                             ((RECT *)rect)->right + 2, ((RECT *)rect)->bottom + 2); \
+            func(handle, ((RECT *)rect)->left + 3, ((RECT *)rect)->top + 3, \
+                                             ((RECT *)rect)->right - 3, ((RECT *)rect)->bottom - 3); \
             func(handle, ((RECT *)rect)->left + 1, ((RECT *)rect)->top + 1, \
-					                         ((RECT *)rect)->right - 1, ((RECT *)rect)->bottom - 1)
+                                             ((RECT *)rect)->right - 1, ((RECT *)rect)->bottom - 1); \
+            func(handle, ((RECT *)rect)->left + 2, ((RECT *)rect)->top + 2, \
+                                             ((RECT *)rect)->right - 2, ((RECT *)rect)->bottom - 2)
 
 void ssd_paint_object_msg()
 {
@@ -85,21 +91,40 @@ static int mDrawText(HDC hdc, const char *buf, int n, int left, int top, int rig
     return DrawText (hdc, buf, n, &rc,  format);
 }
 
-static void paint_single_object(HDC hdc, SSDRECT *select, const char *name)
+static void paint_single_object(HDC hdc, SSDRECT *select, const char *name, int spoof_status)
 {
 
     // FillBoxWithBitmap(hdc, select->left, select->top,
     //                   select->right - select->left,
     //                   select->bottom - select->top,
     //                   &mobilenet_box_bg_9_bmap);
-    SetPenColor(hdc, TEXT_COLOR);
+    if (enroll) {
+        SetPenColor (hdc, PIXEL_blue);
+    } else {
+        printf("%s t\n",name);
+        if (spoof_status == 0) {
+            SetPenColor (hdc, PIXEL_red);
+        }
+        else if (strcmp(name, "") == 0) {
+            SetPenColor (hdc, PIXEL_yellow);
+        }
+        else {
+            SetPenColor (hdc, PIXEL_green);
+        }
+    }
     PaintRectBold(Rectangle, hdc, select);
+    //    FillBoxWithBitmap(hdc, select->left + RECT_EDGE_SIZE,
+    //                      select->bottom - RECT_EDGE_SIZE -12,
+    //                      8, 12, &dot_ssd_bmap);
     FillBoxWithBitmap(hdc, select->left + RECT_EDGE_SIZE,
-                      select->bottom - RECT_EDGE_SIZE -12,
+                      select->bottom + RECT_EDGE_SIZE + 5,
                       8, 12, &dot_ssd_bmap);
+    SetTextColor(hdc, PIXEL_darkblue);
 
+    //    TextOut(hdc, select->left + RECT_EDGE_SIZE + 8 + 5,
+    //            select->bottom - RECT_EDGE_SIZE + TEXT_OUT_OFF - 1, name);
     TextOut(hdc, select->left + RECT_EDGE_SIZE + 8 + 5,
-            select->bottom - RECT_EDGE_SIZE - TEXT_OUT_OFF - 1, name);
+            select->bottom + RECT_EDGE_SIZE /*+ TEXT_OUT_OFF */- 1, name);
 }
 
 static void paint_object(HDC hdc)
@@ -128,7 +153,7 @@ static void paint_object(HDC hdc)
                 select.right = ui_w - edge;
             if (select.bottom > ui_h - edge)
                 select.bottom = ui_h - edge;
-            paint_single_object(hdc, &select, mssd_group->objects[i].name);
+            paint_single_object(hdc, &select, mssd_group->objects[i].name, mssd_group->objects[i].spoof_status);
         }
     }
     // mssd_group->posted--;

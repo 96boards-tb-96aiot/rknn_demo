@@ -1,0 +1,4 @@
+date -s "20190626"
+chmod 755 wfFRTest libwfFR.so
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./
+./wfFRTest

@@ -7,6 +7,8 @@
 #include <sys/prctl.h>
 #include <minigui/common.h>
 
+#include "FRLibraryTypes.h"
+
 #include "rknn_msg.h"
 
 int g_rknn_msgid = -1;
@@ -14,7 +16,8 @@ int g_rknn_msgid = -1;
 
 typedef struct _IPC_MSG {
 	long msg_type;
-	char rknn_msg[sizeof(RKNN_MSG)];
+    char rknn_msg[sizeof(FRIDList)];
+    int spoof_status;
 } IPC_MSG;
 
 
@@ -115,38 +118,40 @@ void ipcmsg_deinit(int msg_key, int *m_msgid)
 	return;
 }
 
-int ipcmsg_rec(RKNN_MSG *rknn_msg)
+int ipcmsg_rec(FRIDList *fr_msg,int *spoof_status)
 {
 	IPC_MSG ipc_msg_recv;
 
-	if (rknn_msg == NULL)
+    if (fr_msg == NULL)
 		return -1;
 	if (g_rknn_msgid < 0)
 		return -1;
 
-	int ret = msgrcv(g_rknn_msgid, &ipc_msg_recv, sizeof(RKNN_MSG), 0, 0);
+    int ret = msgrcv(g_rknn_msgid, &ipc_msg_recv, sizeof(IPC_MSG), 0, 0);
 	if (ret < 0) {
 		printf("msgsnd() read msg failed,errno=%d[%s]\n",
 		         errno, strerror(errno));
 		return -1;
 	}
-	memcpy((char *)rknn_msg, ipc_msg_recv.rknn_msg, sizeof(RKNN_MSG));
+    memcpy((char *)fr_msg, ipc_msg_recv.rknn_msg, sizeof(FRIDList));
+    *spoof_status = ipc_msg_recv.spoof_status;
 
 	return 0;
 }
 
-int ipcmsg_send(RKNN_MSG *rknn_msg)
+int ipcmsg_send(FRIDList* fr_msg, int spoof_status)
 {
 	IPC_MSG ipc_msg_send;
 
-	if (rknn_msg == NULL)
+    if (fr_msg == NULL)
 		return -1;
 	if (g_rknn_msgid < 0)
 		return -1;
 
 	ipc_msg_send.msg_type = 1;
-	memcpy(ipc_msg_send.rknn_msg, (char *)rknn_msg, sizeof(RKNN_MSG));
-	int ret = msgsnd(g_rknn_msgid, (void *)&ipc_msg_send, sizeof(RKNN_MSG), IPC_NOWAIT);
+    ipc_msg_send.spoof_status = spoof_status;
+    memcpy(ipc_msg_send.rknn_msg, (char *)fr_msg, sizeof(FRIDList));
+    int ret = msgsnd(g_rknn_msgid, (void *)&ipc_msg_send, sizeof(IPC_MSG), IPC_NOWAIT);
 	if (ret < 0) {
 		printf("msgsnd() write msg failed,ret = %d errno=%d[%s]\n", ret, errno,
 		         strerror(errno));
@@ -168,29 +173,27 @@ void rknn_msg_deinit()
 	return ipcmsg_deinit(RKNN_IPCMSGKEY, &g_rknn_msgid);
 }
 
-int rknn_msg_send(void * predictions, void *output_classes,
-	              int width, int heigh, void *group)
+int rknn_msg_send(FRIDList* m_msg, int spoof_status)
 {
-	RKNN_MSG m_msg;
-	m_msg.out_data0 = predictions;
-	m_msg.out_data1 = output_classes;
-	m_msg.w = width;
-	m_msg.h = heigh;
-	m_msg.group = group;
-	return ipcmsg_send(&m_msg);
+//	RKNN_MSG m_msg;
+//	m_msg.out_data0 = predictions;
+//	m_msg.out_data1 = output_classes;
+//	m_msg.w = width;
+//	m_msg.h = heigh;
+//	m_msg.group = group;
+    return ipcmsg_send(m_msg, spoof_status);
 }
 
-int rknn_msg_recv(void ** predictions, void **output_classes,
-	              int *width, int *heigh, void **group)
+int rknn_msg_recv(FRIDList* m_msg, int *spoof_status)
 {
-	RKNN_MSG m_msg;
-	if (ipcmsg_rec(&m_msg) != 0)
+//	RKNN_MSG m_msg;
+    if (ipcmsg_rec(m_msg, spoof_status) != 0)
 		return -1;
-	*predictions = m_msg.out_data0;
-	*output_classes = m_msg.out_data1;
-	*width = m_msg.w;
-	*heigh = m_msg.h;
-	*group = m_msg.group;
+//	*predictions = m_msg.out_data0;
+//	*output_classes = m_msg.out_data1;
+//	*width = m_msg.w;
+//	*heigh = m_msg.h;
+//	*group = m_msg.group;
 	return 0;
 }
 
