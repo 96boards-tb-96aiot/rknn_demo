@@ -142,9 +142,9 @@ static void paint_object(HDC hdc)
             struct ssd_object *object = &mssd_group->objects[i];
             //  struct win *ui_win = rk_fb_getuiwin();
             SSDRECT select;
-            select.left = object->select.left * ui_w / front_w;
+            select.left = ui_w-object->select.left * ui_w / front_w;
             select.top = object->select.top * ui_h  / front_h;
-            select.right = object->select.right * ui_w / front_w;
+            select.right = ui_w-object->select.right * ui_w / front_w;
             select.bottom = object->select.bottom * ui_h / front_h;
             if (select.left < edge)
                 select.left = edge;
