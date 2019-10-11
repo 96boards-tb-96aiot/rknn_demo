@@ -60,6 +60,8 @@ int enroll = 0;
 int spoof_check = 0;
 char first_name[128] = "";
 char last_name[128] = "";
+int jpeg = 0;
+char jpegPath[256];
 
 int rknn_reg_paint_callback(paint_callback_t func)
 {
@@ -247,6 +249,8 @@ int rknn_ui_show()
     create_info.ty = 0;
     create_info.rx = g_rcScr.right;
     create_info.by = g_rcScr.bottom;
+//    create_info.rx = 480;
+//    create_info.by = 480;
     create_info.dwAddData = 0;
     create_info.hHosting = HWND_DESKTOP;
     //  create_info.language = 0; //en
@@ -300,6 +304,7 @@ void parse_args(int argc, char **argv)
            {"help",     no_argument,       0, 'p' },
            {"enroll",   required_argument, 0, 'e' },
            {"spoof",    no_argument,       0, 's' },
+	   {"jpeg",     required_argument, 0, 'j' },
            {0,          0,                 0,  0  }
        };
 
@@ -338,12 +343,18 @@ void parse_args(int argc, char **argv)
            spoof_check = 1;
            printf("Spoof check : ON\n");
            break;
+       case 'j':
+            jpeg = 1;
+            printf("Enrolling from jpeg Path: %s\n", optarg);
+            strcpy(jpegPath, optarg);
+            break;
        case '?':
        case 'p':
            printf("Usage: %s to run rknn demo\n"
                   "         --device, required, use usb camera or mipi camera\n"
                   "         --spoof, no argument, For checking spoof\n"
                   "         --enroll [first_name] [last_name], required argument first name and last name for enrolling person\n",
+		"         --jpeg [Path to image], required argument is the path to jpeg file",
                   argv[0]);
            exit(-1);
        default:

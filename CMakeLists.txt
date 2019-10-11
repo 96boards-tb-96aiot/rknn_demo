@@ -54,28 +54,6 @@ install(FILES libwfFR.so DESTINATION lib)
 install(FILES libjpeg.so DESTINATION lib)
 install(FILES libjpeg.so.8 DESTINATION lib)
 install(FILES libjpeg.so.8.1.2 DESTINATION lib)
-install(FILES libgomp.so DESTINATION lib)
-install(FILES libgomp.so.1 DESTINATION lib)
-install(FILES libgomp.so.1.0.0 DESTINATION lib)
-
-
-if (DEFINED ENABLE_FRG)
-install(FILES rknn/frg/frgsdk_rk1808/so_file/librkfacerecg.so DESTINATION lib)
-install(FILES rknn/frg/frgsdk_rk1808/so_file/libopencv_core.so
-        DESTINATION lib
-        RENAME libopencv_core.so.3.4)
-install(FILES rknn/frg/frgsdk_rk1808/so_file/libopencv_imgproc.so
-        DESTINATION lib
-        RENAME libopencv_imgproc.so.3.4)
-install(FILES rknn/frg/frgsdk_rk1808/box_priors.txt DESTINATION bin)
-install(FILES rknn/frg/start_rknn_frg.sh DESTINATION bin)
-endif()
-
-if (DEFINED MODEL_RESOURCE_FILES)
-separate_arguments(MODEL_RESOURCE_FILES)
-install(FILES ${MODEL_RESOURCE_FILES} DESTINATION share/rknn_demo)
-endif()
-
 install(FILES FR/b2.bin DESTINATION share/rknn_demo/frsdk_demo)
 install(FILES FR/f300rk.bin DESTINATION share/rknn_demo/frsdk_demo)
 install(FILES FR/p0.bin DESTINATION share/rknn_demo/frsdk_demo)

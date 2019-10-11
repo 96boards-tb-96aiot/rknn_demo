@@ -23,8 +23,8 @@
 #define SRC_H         480
 #define SRC_FPS       30
 #define SRC_BPP       24
-#define DST_W         480
-#define DST_H         864
+#define DST_W         360
+#define DST_H         480
 #define DST_BPP       24
 
 #define SRC_V4L2_FMT  V4L2_PIX_FMT_YUV420
@@ -169,7 +169,7 @@ long cal_fps(float *cal_fps)
     ssd_paint_fps_msg();
 }
 
-int ssd_rknn_process(char* in_data,char* in_data1, int w, int h)
+int ssd_rknn_process(char* in_data, int w, int h)
 {
     int width = w;
     int height = h;
@@ -178,13 +178,13 @@ int ssd_rknn_process(char* in_data,char* in_data1, int w, int h)
     for(int m=0; m<1; m++)
     {
         FRIDList pResult;
-	 FRIDList* pResultIR;
         int frstatus = 0;
 
         printf("Before recog: "); checkMemoryc();
         struct timeval start, end;
         gettimeofday(&start, NULL);
 
+	printf("FR input image %dx%d\n", width, height);
         /* Call to recognize face, to be called repeatedly on image stream coming from camera.*/
         int rval;
         if (spoof_check) {
@@ -290,15 +290,15 @@ int wfFR_recognise(char* in_data, int w, int h) {
     }
 }
 // int frameeeee = 0;
-void ssd_camera_callback(void *p, void *p1,int w, int h)
+void ssd_camera_callback(void *p, int w, int h)
 {
     unsigned char* srcbuf = (unsigned char *)p;
+
+    YUV420toRGB24_RGA2(SRC_RKRGA_FMT, srcbuf, w, h,
+                      SRC_RKRGA_FMT, g_rga_buf_fd, DST_W, DST_H);
+    memcpy(g_mem_buf, g_rga_buf_bo.ptr, 360 * 480 * DST_BPP / 8);
     // Send camera data to minigui layer
-    yuv_draw(srcbuf, 0, SRC_RKRGA_FMT, w, h);
-    unsigned char* srcbuf1 = (unsigned char *)p1;
-    // Send camera data to minigui layer
-    yuv_draw(srcbuf1, 0, SRC_RKRGA_FMT, w, h);
-	
+    yuv_draw(g_mem_buf, 0, SRC_RKRGA_FMT, 360, 480);
     struct timeval start, end;
     gettimeofday(&start, NULL);
 
@@ -337,7 +337,7 @@ void ssd_camera_callback(void *p, void *p1,int w, int h)
     if (enroll)
         wfFR_recognise(p,w,h);
     else
-        ssd_rknn_process(p,p1,w,h);
+        ssd_rknn_process(p,w,h);
 }
 
 int ssd_post(void *flag)
@@ -345,8 +345,8 @@ int ssd_post(void *flag)
     FRIDList msg;
     int spoof_status;
 
-    int width = SRC_W;
-    int heigh = SRC_H;
+//    int width = SRC_W;
+//    int heigh = SRC_H;
     float *predictions;
     unsigned long *output_classes;
     struct ssd_group *group;
@@ -409,6 +409,22 @@ int ssd_post(void *flag)
     }
 }
 
+void jpegRun(char* image_path, int* flag ){
+    FRIDList pResult;
+    int spoof_status = 0;
+
+    wfFR_setInputImageBufferFormat(IMAGE_YUV420);
+    wfFR_EnrollFaceFromSavedImage(hFR, image_path,recordID,&pResult,&spoof_status);
+
+    printf("Num results %s %d\n", image_path,pResult.nResults);
+    printf("spoof status: %d\n",spoof_status); 
+    printf("Release FR handle\n");
+    /* Release FR handle */
+    wfFR_Release(&hFR);
+}
+
+
+
 int ssd_run(void *flag)
 {
     flag = (int*) &continue_camera_capture;
@@ -470,8 +486,13 @@ int ssd_run(void *flag)
     }
 
     // Open Camera and Run
-    cameraRun(dev_name, SRC_W, SRC_H, SRC_FPS, SRC_V4L2_FMT,
-              ssd_camera_callback, (int*)flag);
+
+    if(jpeg && enroll) {
+        jpegRun(jpegPath, flag);
+    } else {
+    	cameraRun(dev_name, SRC_W, SRC_H, SRC_FPS, SRC_V4L2_FMT,ssd_camera_callback, (int*)flag);
+    }
+
 
     printf("exit cameraRun\n\n");
     if (enroll)
@@ -485,11 +506,11 @@ int ssd_init(char *name)
 {
     dev_name = name;
     rknn_msg_init();
-//    buffer_init(DST_W, DST_H, DST_BPP, &g_rga_buf_bo,
-//                &g_rga_buf_fd);
+    buffer_init(DST_W, DST_H, DST_BPP, &g_rga_buf_bo,
+                &g_rga_buf_fd);
 
-//    if (!g_mem_buf)
-//        g_mem_buf = (char *)malloc(DST_W * DST_H * DST_BPP / 8);
+    if (!g_mem_buf)
+        g_mem_buf = (char *)malloc(DST_W * DST_H * DST_BPP / 8);
 }
 
 int ssd_deinit()

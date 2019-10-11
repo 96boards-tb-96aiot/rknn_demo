@@ -45,5 +45,7 @@ extern int enroll;
 extern int spoof_check;
 extern char first_name[128];
 extern char last_name[128];
+extern char jpegPath[256];
+extern int jpeg;
 
 #endif

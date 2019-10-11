@@ -15,13 +15,13 @@
 #define DST_W             640
 #define DST_H             480
 #if NEED_RKNNAPI
-#define DISP_W            2048
-#define DISP_H            1536
+#define DISP_W            480
+#define DISP_H            854
 #define TEXT_OUT_OFF      30
 #define LOGO_OFF          1840
 #else
-#define DISP_W            1280
-#define DISP_H            720
+#define DISP_W            480
+#define DISP_H            854
 #define TEXT_OUT_OFF      12
 #define LOGO_OFF          1050
 #endif
@@ -135,6 +135,7 @@ static void paint_object(HDC hdc)
     int ui_h = DISP_H;
     int edge = RECT_EDGE_SIZE;
 
+    printf("Display resolution %dx%d, Camera resolution %dx%d\n", ui_w, ui_h, front_w, front_h);
     struct ssd_group *mssd_group = ssd_get_ssd_group();
     if (mssd_group->count) {
         for (int i = 0; i < mssd_group->count; i++) {
@@ -181,7 +182,7 @@ static LRESULT caption_wnd_proc(HWND hwnd, UINT message, WPARAM w_param, LPARAM 
         SelectFont (hdc, g_caption_font);
         SetBkColor (hdc, CAPTION_BKCOLOR);
         SetTextColor(hdc, TEXT_COLOR);
-        mDrawText(hdc, "Rockchip SSD Demo", -1, 40, 0, g_rcScr.right, CAPTION_H,
+        mDrawText(hdc, "Beiqi Face Recgnize Demo", -1, 40, 0, g_rcScr.right, CAPTION_H,
                   DT_NOCLIP | DT_SINGLELINE | DT_LEFT | DT_VCENTER);
         EndPaint (hwnd, hdc);
         break;

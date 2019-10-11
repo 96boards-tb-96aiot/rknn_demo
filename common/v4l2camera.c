@@ -219,11 +219,11 @@ static void jpegWrite(unsigned char* img, char* jpegFilename)
 	fclose(outfile);
 }
 
-static void imageProcess(void *p,struct timeval time, camera_callback_t callback)
+static void imageProcess(void *p, struct timeval time, camera_callback_t callback)
 {
 	// Out input h/w maybe can't fit uvc device, so there maybe changed.
 	if (callback)
-		callback(p,width, height);
+		callback(p, width, height);
 }
 
 static int frameRead(camera_callback_t callback)
