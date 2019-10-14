@@ -250,7 +250,7 @@ int rknn_ui_show()
     create_info.rx = g_rcScr.right;
     create_info.by = g_rcScr.bottom;
 //    create_info.rx = 480;
-//    create_info.by = 480;
+//    create_info.by = 854;
     create_info.dwAddData = 0;
     create_info.hHosting = HWND_DESKTOP;
     //  create_info.language = 0; //en

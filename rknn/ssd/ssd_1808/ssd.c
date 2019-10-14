@@ -23,13 +23,15 @@
 #define SRC_H         480
 #define SRC_FPS       30
 #define SRC_BPP       24
-#define DST_W         360
+//#define DST_W         240
+//#define DST_H         480
+#define DST_W         640
 #define DST_H         480
 #define DST_BPP       24
 
 #define SRC_V4L2_FMT  V4L2_PIX_FMT_YUV420
 //#define SRC_V4L2_FMT  V4L2_PIX_FMT_NV21
- #define SRC_RKRGA_FMT RK_FORMAT_YCbCr_420_P
+#define SRC_RKRGA_FMT RK_FORMAT_YCbCr_420_P
 //#define SRC_RKRGA_FMT RK_FORMAT_YCbCr_420_SP
 
 #define DST_RKRGA_FMT RK_FORMAT_RGB_888
@@ -49,6 +51,9 @@ unsigned long recordID = -1;
 
 extern int yuv_draw(char *src_ptr, int src_fd, int format,
                     int src_w, int src_h);
+extern int yuv_draw_beiqi(char *src_ptr, int src_fd, int format,
+                    int src_w, int src_h);
+
 extern void ssd_paint_object_msg();
 extern void ssd_paint_fps_msg();
 
@@ -294,11 +299,12 @@ void ssd_camera_callback(void *p, int w, int h)
 {
     unsigned char* srcbuf = (unsigned char *)p;
 
-    YUV420toRGB24_RGA2(SRC_RKRGA_FMT, srcbuf, w, h,
-                      SRC_RKRGA_FMT, g_rga_buf_fd, DST_W, DST_H);
-    memcpy(g_mem_buf, g_rga_buf_bo.ptr, 360 * 480 * DST_BPP / 8);
+//    YUV420toRGB24_RGA2(SRC_RKRGA_FMT, srcbuf, w, h,
+//                      SRC_RKRGA_FMT, g_rga_buf_fd, DST_W, DST_H);
+//    memcpy(g_mem_buf, g_rga_buf_bo.ptr, 240 * 480 * DST_BPP / 8);
     // Send camera data to minigui layer
-    yuv_draw(g_mem_buf, 0, SRC_RKRGA_FMT, 360, 480);
+    yuv_draw_beiqi(srcbuf, 0, SRC_RKRGA_FMT, w ,h);
+
     struct timeval start, end;
     gettimeofday(&start, NULL);
 
@@ -432,6 +438,7 @@ int ssd_run(void *flag)
     int status = 0;
     printf("Start: "); checkMemoryc();
 
+    //char pBasePath[255] = {"/userdata/frsdk_demo/"};
     char pBasePath[255] = {"/usr/share/rknn_demo/frsdk_demo/"};
     //                /*"./b1.bin"; */ {0};
 

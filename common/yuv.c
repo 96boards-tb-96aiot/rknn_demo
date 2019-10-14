@@ -138,12 +138,57 @@ int YUV420toRGB24_RGA2(unsigned int src_fmt, unsigned char* src_buf,
     dst.mmuFlag = 1;
 
 
-    rga_set_rect(&src.rect, 140, 0, 360, 480, 640, 480, src_fmt);
-    rga_set_rect(&dst.rect, 0, 0, 360, 480, 360, 480, dst_fmt);
+//    rga_set_rect(&src.rect, 140, 0, 360, 480, 640, 480, src_fmt);
+//    rga_set_rect(&dst.rect, 0, 0, 360, 480, 360, 480, dst_fmt);
+    rga_set_rect(&src.rect, 200, 0, 240, 480, 640, 480, src_fmt);
+    rga_set_rect(&dst.rect, 0, 0, 240, 480, 240, 480, dst_fmt);
 src.rotation = HAL_TRANSFORM_FLIP_H;
     ret = c_RkRgaBlit(&src, &dst, NULL);
     if (ret)
         printf("c_RkRgaBlit0 error : %s\n", strerror(errno));
     return ret;
 }
+
+unsigned char clip_value(unsigned char x,unsigned char min_val,unsigned char  max_val){
+	if(x>max_val){
+		return max_val;
+	}else if(x<min_val){
+		return min_val;
+	}else{
+		return x;
+	}
+}
+
+int RGB24_TO_YUV420(unsigned char *RgbBuf,int w,int h,unsigned char *yuvBuf)
+{
+	unsigned char*ptrY, *ptrU, *ptrV, *ptrRGB;
+	memset(yuvBuf,0,w*h*3/2);
+	ptrY = yuvBuf;
+	ptrU = yuvBuf + w*h;
+	ptrV = ptrU + (w*h*1/4);
+	unsigned char y, u, v, r, g, b;
+	for (int j = 0; j<h;j++){
+		ptrRGB = RgbBuf + w*j*3 ;
+		for (int i = 0;i<w;i++){
+			
+			r = *(ptrRGB++);
+			g = *(ptrRGB++);
+			b = *(ptrRGB++);
+			y = (unsigned char)( ( 66 * r + 129 * g +  25 * b + 128) >> 8) + 16  ;          
+			u = (unsigned char)( ( -38 * r -  74 * g + 112 * b + 128) >> 8) + 128 ;          
+			v = (unsigned char)( ( 112 * r -  94 * g -  18 * b + 128) >> 8) + 128 ;
+			*(ptrY++) = clip_value(y,0,255);
+			if (j%2==0&&i%2 ==0){
+				*(ptrU++) =clip_value(u,0,255);
+			}
+			else{
+				if (i%2==0){
+				*(ptrV++) =clip_value(v,0,255);
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 

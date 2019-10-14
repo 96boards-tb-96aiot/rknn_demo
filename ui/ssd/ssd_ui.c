@@ -50,8 +50,8 @@ RECT fps_rect   = {30, 11, 153, 55};
 RECT main_rect1 = {290, 70, 2048, 1536};
 RECT main_rect2 = {0, 160, 290, 1536};
 #else
-RECT main_rect1 = {290, 70, 1280, 720};
-RECT main_rect2 = {0, 160, 290, 720};
+RECT main_rect1 = {290, 70, 480, 854};
+RECT main_rect2 = {0, 160, 290, 854};
 #endif
 
 #define PaintRectBold(func, handle, rect) \
@@ -116,14 +116,14 @@ static void paint_single_object(HDC hdc, SSDRECT *select, const char *name, int 
     //    FillBoxWithBitmap(hdc, select->left + RECT_EDGE_SIZE,
     //                      select->bottom - RECT_EDGE_SIZE -12,
     //                      8, 12, &dot_ssd_bmap);
-    FillBoxWithBitmap(hdc, select->left + RECT_EDGE_SIZE,
+    FillBoxWithBitmap(hdc, DISP_W-select->left + RECT_EDGE_SIZE,
                       select->bottom + RECT_EDGE_SIZE + 5,
                       8, 12, &dot_ssd_bmap);
     SetTextColor(hdc, PIXEL_darkblue);
 
     //    TextOut(hdc, select->left + RECT_EDGE_SIZE + 8 + 5,
     //            select->bottom - RECT_EDGE_SIZE + TEXT_OUT_OFF - 1, name);
-    TextOut(hdc, select->left + RECT_EDGE_SIZE + 8 + 5,
+    TextOut(hdc, DISP_W-select->left + RECT_EDGE_SIZE + 8 + 5 -150,
             select->bottom + RECT_EDGE_SIZE /*+ TEXT_OUT_OFF */- 1, name);
 }
 
@@ -142,9 +142,9 @@ static void paint_object(HDC hdc)
             struct ssd_object *object = &mssd_group->objects[i];
             //  struct win *ui_win = rk_fb_getuiwin();
             SSDRECT select;
-            select.left = ui_w-object->select.left * ui_w / front_w;
-            select.top = object->select.top * ui_h  / front_h;
-            select.right = ui_w-object->select.right * ui_w / front_w;
+            select.left = ui_w-object->select.left * ui_w / front_w +90;
+            select.top = object->select.top * ui_h / front_h;
+            select.right = ui_w-object->select.right * ui_w / front_w - 90;
             select.bottom = object->select.bottom * ui_h / front_h;
             if (select.left < edge)
                 select.left = edge;
@@ -154,6 +154,7 @@ static void paint_object(HDC hdc)
                 select.right = ui_w - edge;
             if (select.bottom > ui_h - edge)
                 select.bottom = ui_h - edge;
+		printf("select.left=%d,select.top=%d,select.right=%d,select.bottom=%d\n",select.left,select.top,select.right,select.bottom);
             paint_single_object(hdc, &select, mssd_group->objects[i].name, mssd_group->objects[i].spoof_status);
         }
     }

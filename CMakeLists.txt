@@ -66,7 +66,8 @@ install(FILES FR/s11rk.bin DESTINATION share/rknn_demo/frsdk_demo)
 install(DIRECTORY FR/wffrdb DESTINATION share/rknn_demo/frsdk_demo)
 install(DIRECTORY FR/wffrdbpc DESTINATION share/rknn_demo/frsdk_demo)
 
-install(FILES ${MINIGUI_CFG} DESTINATION ../etc RENAME MiniGUI.cfg)
+install(FILES minigui/MiniGUI-480x854.cfg DESTINATION ../etc RENAME MiniGUI.cfg)
+#install(FILES ${MINIGUI_CFG} DESTINATION ../etc RENAME MiniGUI.cfg)
 install(DIRECTORY minigui DESTINATION local/share)
 install(DIRECTORY resource DESTINATION local/share/rknn_demo)
 
