@@ -118,10 +118,10 @@ int YUV420toRGB24_RGA(unsigned int src_fmt, unsigned char* src_buf,
     return ret;
 }
 
-int YUV420toRGB24_RGA2(unsigned int src_fmt, unsigned char* src_buf,
+int YUV420_ROTATION(unsigned int src_fmt, unsigned char* src_buf,
                       int src_w, int src_h,
                       unsigned int dst_fmt, int dst_fd,
-                      int dst_w, int dst_h)
+                      int dst_w, int dst_h,int rotation)
 {
     int ret;
     rga_info_t src;
@@ -137,17 +137,47 @@ int YUV420toRGB24_RGA2(unsigned int src_fmt, unsigned char* src_buf,
     dst.fd = dst_fd;
     dst.mmuFlag = 1;
 
-
-//    rga_set_rect(&src.rect, 140, 0, 360, 480, 640, 480, src_fmt);
-//    rga_set_rect(&dst.rect, 0, 0, 360, 480, 360, 480, dst_fmt);
-    rga_set_rect(&src.rect, 200, 0, 240, 480, 640, 480, src_fmt);
-    rga_set_rect(&dst.rect, 0, 0, 240, 480, 240, 480, dst_fmt);
-src.rotation = HAL_TRANSFORM_FLIP_H;
+    rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, src_fmt);
+    rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, dst_fmt);
+	//src.rotation = HAL_TRANSFORM_FLIP_H;
+    src.rotation = rotation; // Ðý×ª 90 ¡ã
     ret = c_RkRgaBlit(&src, &dst, NULL);
     if (ret)
         printf("c_RkRgaBlit0 error : %s\n", strerror(errno));
     return ret;
 }
+
+int YUV420_MIRROR(unsigned int src_fmt, unsigned char* src_buf,
+                      int src_w, int src_h,
+                      unsigned int dst_fmt, int dst_fd,
+                      int dst_w, int dst_h,int Mirror)
+{
+    int ret;
+    rga_info_t src;
+    rga_info_t dst;
+    int Format;
+
+    memset(&src, 0, sizeof(rga_info_t));
+    src.fd = -1; //rga_src_fd;
+    src.virAddr = src_buf;
+    src.mmuFlag = 1;
+
+
+    memset(&dst, 0, sizeof(rga_info_t));
+    dst.fd = dst_fd;
+    dst.mmuFlag = 1;
+	
+    rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, src_fmt);
+	rga_set_rect(&dst.rect, 0, 0, src_w, src_h, src_w, src_h, src_fmt);
+	//src.rotation = HAL_TRANSFORM_FLIP_H;
+    src.rotation = Mirror;
+    ret = c_RkRgaBlit(&src, &dst, NULL);
+    if (ret)
+        printf("c_RkRgaBlit1 error : %s\n", strerror(errno));
+	
+    return ret;
+}
+
 
 unsigned char clip_value(unsigned char x,unsigned char min_val,unsigned char  max_val){
 	if(x>max_val){

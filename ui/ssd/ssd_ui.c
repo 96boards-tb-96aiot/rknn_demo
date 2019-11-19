@@ -12,16 +12,16 @@
 #include "ui_res.h"
 #include "ssd.h"
 
-#define DST_W             640
-#define DST_H             480
+#define DST_W             720
+#define DST_H             1280
 #if NEED_RKNNAPI
-#define DISP_W            480
-#define DISP_H            854
+#define DISP_W            720
+#define DISP_H            1280
 #define TEXT_OUT_OFF      30
 #define LOGO_OFF          1840
 #else
-#define DISP_W            480
-#define DISP_H            854
+#define DISP_W            720
+#define DISP_H            1280
 #define TEXT_OUT_OFF      12
 #define LOGO_OFF          1050
 #endif
@@ -50,8 +50,8 @@ RECT fps_rect   = {30, 11, 153, 55};
 RECT main_rect1 = {290, 70, 2048, 1536};
 RECT main_rect2 = {0, 160, 290, 1536};
 #else
-RECT main_rect1 = {290, 70, 480, 854};
-RECT main_rect2 = {0, 160, 290, 854};
+RECT main_rect1 = {290, 70, 720, 1280};
+RECT main_rect2 = {0, 160, 290, 1280};
 #endif
 
 #define PaintRectBold(func, handle, rect) \
@@ -116,14 +116,14 @@ static void paint_single_object(HDC hdc, SSDRECT *select, const char *name, int 
     //    FillBoxWithBitmap(hdc, select->left + RECT_EDGE_SIZE,
     //                      select->bottom - RECT_EDGE_SIZE -12,
     //                      8, 12, &dot_ssd_bmap);
-    FillBoxWithBitmap(hdc, DISP_W-select->left + RECT_EDGE_SIZE,
+    FillBoxWithBitmap(hdc, select->left + RECT_EDGE_SIZE,
                       select->bottom + RECT_EDGE_SIZE + 5,
                       8, 12, &dot_ssd_bmap);
     SetTextColor(hdc, PIXEL_darkblue);
 
     //    TextOut(hdc, select->left + RECT_EDGE_SIZE + 8 + 5,
     //            select->bottom - RECT_EDGE_SIZE + TEXT_OUT_OFF - 1, name);
-    TextOut(hdc, DISP_W-select->left + RECT_EDGE_SIZE + 8 + 5 -150,
+    TextOut(hdc, select->left + RECT_EDGE_SIZE + 8 + 5,
             select->bottom + RECT_EDGE_SIZE /*+ TEXT_OUT_OFF */- 1, name);
 }
 
@@ -142,9 +142,13 @@ static void paint_object(HDC hdc)
             struct ssd_object *object = &mssd_group->objects[i];
             //  struct win *ui_win = rk_fb_getuiwin();
             SSDRECT select;
-            select.left = ui_w-object->select.left * ui_w / front_w +90;
+//            select.left = ui_w-object->select.left * ui_w / front_w +90;
+//            select.top = object->select.top * ui_h / front_h;
+//            select.right = ui_w-object->select.right * ui_w / front_w - 90;
+//            select.bottom = object->select.bottom * ui_h / front_h;
+            select.left = object->select.left * ui_w / front_w;
             select.top = object->select.top * ui_h / front_h;
-            select.right = ui_w-object->select.right * ui_w / front_w - 90;
+            select.right = object->select.right * ui_w / front_w;
             select.bottom = object->select.bottom * ui_h / front_h;
             if (select.left < edge)
                 select.left = edge;
@@ -183,7 +187,7 @@ static LRESULT caption_wnd_proc(HWND hwnd, UINT message, WPARAM w_param, LPARAM 
         SelectFont (hdc, g_caption_font);
         SetBkColor (hdc, CAPTION_BKCOLOR);
         SetTextColor(hdc, TEXT_COLOR);
-        mDrawText(hdc, "Beiqi Face Recgnize Demo", -1, 40, 0, g_rcScr.right, CAPTION_H,
+        mDrawText(hdc, "Beiqi Face Recognition Demo", -1, 100, 0, g_rcScr.right, CAPTION_H,
                   DT_NOCLIP | DT_SINGLELINE | DT_LEFT | DT_VCENTER);
         EndPaint (hwnd, hdc);
         break;

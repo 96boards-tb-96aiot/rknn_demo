@@ -37,6 +37,7 @@ int ssd_post(void *flag);
 int ssd_init(char *name);
 int ssd_deinit();
 float ssd_get_fps();
+int ssd_play_sound(void *flag);
 struct ssd_group* ssd_get_ssd_group();
 
 // enroll = 0 for recognise mode

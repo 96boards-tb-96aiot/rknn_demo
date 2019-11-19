@@ -19,19 +19,21 @@
 
 #define MODEL_NAME    "/usr/share/rknn_demo/ssd_inception_v2.rknn"
 
-#define SRC_W         640
-#define SRC_H         480
+#define SRC_W         1280
+#define SRC_H         720
 #define SRC_FPS       30
 #define SRC_BPP       24
 //#define DST_W         240
 //#define DST_H         480
-#define DST_W         640
-#define DST_H         480
+#define DST_W         1280
+#define DST_H         720
 #define DST_BPP       24
+
+#define SOUND_NAME  "/usr/share/rknn_demo/frsdk_demo/ok.wav"
 
 #define SRC_V4L2_FMT  V4L2_PIX_FMT_YUV420
 //#define SRC_V4L2_FMT  V4L2_PIX_FMT_NV21
-#define SRC_RKRGA_FMT RK_FORMAT_YCbCr_420_P
+#define SRC_RKRGA_FMT RK_FORMAT_YCrCb_420_P
 //#define SRC_RKRGA_FMT RK_FORMAT_YCbCr_420_SP
 
 #define DST_RKRGA_FMT RK_FORMAT_RGB_888
@@ -42,6 +44,10 @@ float g_fps;
 bo_t g_rga_buf_bo;
 int g_rga_buf_fd;
 char *g_mem_buf;
+
+bo_t g_rga_buf_bo_flip;
+int g_rga_buf_fd_flip;
+char *g_mem_buf_flip;
 struct ssd_group g_ssd_group[2];
 volatile int send_count = 0;
 volatile int recv_count = 0;
@@ -64,6 +70,23 @@ struct timeval start;
 
 int continue_camera_capture = 1;
 
+int ssd_play_sound(void *flag)
+{
+        char cmd[256] = "";
+        sprintf(cmd,"aplay %s",SOUND_NAME);
+        while(*(int *)flag) {
+                struct ssd_group *mssd_group = ssd_get_ssd_group();
+                if (mssd_group->count) {
+                        for (int i = 0; i < mssd_group->count; i++) {
+                                struct ssd_object *object = &mssd_group->objects[i];
+                                if (!enroll&&mssd_group->objects[i].spoof_status&&strcmp(mssd_group->objects[i].name, "") != 0) {
+                                        printf("%s t\n",mssd_group->objects[i].name);
+                                        system(cmd);
+                                }
+                        }
+                }
+        }
+}
 
 /**
  * Returns the current resident set size (physical memory use) measured
@@ -303,7 +326,15 @@ void ssd_camera_callback(void *p, int w, int h)
 //                      SRC_RKRGA_FMT, g_rga_buf_fd, DST_W, DST_H);
 //    memcpy(g_mem_buf, g_rga_buf_bo.ptr, 240 * 480 * DST_BPP / 8);
     // Send camera data to minigui layer
-    yuv_draw_beiqi(srcbuf, 0, SRC_RKRGA_FMT, w ,h);
+    //yuv_draw_beiqi(srcbuf, 0, SRC_RKRGA_FMT, w ,h);
+    YUV420_MIRROR(SRC_RKRGA_FMT, srcbuf, w, h,
+                      SRC_RKRGA_FMT, g_rga_buf_fd_flip, w, h,HAL_TRANSFORM_FLIP_V);
+    memcpy(g_mem_buf_flip, g_rga_buf_bo_flip.ptr, DST_W * DST_H * DST_BPP / 8);
+
+    YUV420_ROTATION(SRC_RKRGA_FMT, g_mem_buf_flip, w, h,
+                      RK_FORMAT_YCbCr_420_P, g_rga_buf_fd, h, w,HAL_TRANSFORM_ROT_90);
+    memcpy(g_mem_buf, g_rga_buf_bo.ptr, DST_W * DST_H * DST_BPP / 8);
+
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
@@ -341,9 +372,11 @@ void ssd_camera_callback(void *p, int w, int h)
     //    ssd_rknn_process(g_mem_buf, DST_W, DST_H, DST_BPP);
     cal_fps(&g_fps);
     if (enroll)
-        wfFR_recognise(p,w,h);
+        wfFR_recognise(g_mem_buf,h,w);
     else
-        ssd_rknn_process(p,w,h);
+        ssd_rknn_process(g_mem_buf,h,w);
+
+    yuv_draw(g_mem_buf, 0, SRC_RKRGA_FMT, h ,w);
 }
 
 int ssd_post(void *flag)
@@ -518,6 +551,12 @@ int ssd_init(char *name)
 
     if (!g_mem_buf)
         g_mem_buf = (char *)malloc(DST_W * DST_H * DST_BPP / 8);
+
+    buffer_init(DST_W, DST_H, DST_BPP, &g_rga_buf_bo_flip,
+                &g_rga_buf_fd_flip);
+
+    if (!g_mem_buf_flip)
+        g_mem_buf_flip = (char *)malloc(DST_W * DST_H * DST_BPP / 8);
 }
 
 int ssd_deinit()
@@ -525,5 +564,9 @@ int ssd_deinit()
     if (g_mem_buf)
         free(g_mem_buf);
     buffer_deinit(&g_rga_buf_bo, g_rga_buf_fd);
+
+    if (g_mem_buf_flip)
+        free(g_mem_buf_flip);
+    buffer_deinit(&g_rga_buf_bo_flip, g_rga_buf_fd_flip);
     rknn_msg_deinit();
 }

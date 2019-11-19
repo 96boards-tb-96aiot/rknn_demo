@@ -50,10 +50,12 @@ static PLOGFONT g_main_font = NULL;
 typedef int (*paint_callback_t)(HWND hwnd);
 paint_callback_t g_paint_callback_func;
 typedef int (*rknn_callback_t)(void *arg);
+typedef int (*sound_callback_t)(void *arg);
 
 static int g_run_flag = 1;
 static pthread_t g_run_tid = 0;
 static pthread_t g_post_tid = 0;
+static pthread_t g_sound_tid = 0;
 char *dev_name;
 
 int enroll = 0;
@@ -130,6 +132,35 @@ int rknn_post_pth_destory()
     }
 }
 
+void *rknn_sound_pth(void *arg)
+{
+    sound_callback_t sound_func = (sound_callback_t)arg;
+    if (sound_func) {
+        // If the flag be set to 0, phread need end self.
+        sound_func((void *)&g_run_flag);
+    }
+    pthread_exit(0);
+}
+
+int rknn_sound_pth_create(rknn_callback_t func)
+{
+    if (pthread_create(&g_sound_tid, NULL,
+                       rknn_sound_pth, (void *)func)) {
+        printf("create  sound pthread fail\n");
+        return -1;
+    }
+    return 0;
+}
+
+int rknn_sound_pth_destory()
+{
+    if (g_sound_tid) {
+        g_run_flag = 0;
+        pthread_join(g_sound_tid, NULL);
+        g_sound_tid = 0;
+    }
+}
+
 int rknn_child_win_init(HWND hwnd)
 {
     int ret;
@@ -170,10 +201,12 @@ int rknn_demo_init()
 {
     rknn_callback_t post;
     rknn_callback_t run;
+    sound_callback_t sound_play;
 #if ENABLE_SSD
     ssd_init(dev_name);
     post = ssd_post;
     run = ssd_run;
+    sound_play = ssd_play_sound;
 #endif
 #if ENABLE_JOINT
     joint_init(dev_name);
@@ -187,6 +220,7 @@ int rknn_demo_init()
 #endif
     rknn_post_pth_create(post);
     rknn_run_pth_create(run);
+    rknn_sound_pth_create(ssd_play_sound);
 }
 
 int rknn_demo_deinit()
@@ -202,6 +236,7 @@ int rknn_demo_deinit()
 #endif
     rknn_run_pth_destory();
     rknn_post_pth_destory();
+    rknn_sound_pth_destory();
 }
 
 static LRESULT rknn_win_proc(HWND hwnd, UINT message, WPARAM w_param, LPARAM l_param)
